@@ -14,7 +14,7 @@
 - [Express](https://expressjs.com/)
 - [Socket.IO](https://socket.io/)
 - [SQLite](https://www.sqlite.org/)
-- 
+  
 ## Instalación
 
 1. **Clonar el repositorio**
