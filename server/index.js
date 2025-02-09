@@ -14,6 +14,8 @@ const server = createServer(app);
 const io = new Server(server, {
   connectionStateRecovery: {},
 });
+
+// Base de datos
 const db = createClient({
   url: "libsql://grateful-scrambler-carloswariasa.turso.io",
   authToken: process.env.DB_TOKEN,
@@ -25,6 +27,7 @@ await db.execute(`
     message TEXT NOT NULL
   )`);
 
+// Eventos WebSocket
 io.on("connection", async (socket) => {
   console.log("A user connected");
 
@@ -63,14 +66,20 @@ io.on("connection", async (socket) => {
   }
 });
 
+// Configuración Express
 app.use(express.static("public"));
-
 app.use(logger("dev"));
 
 app.get("/", (req, res) => {
   res.sendFile(process.cwd() + "/client/index.html");
 });
 
-server.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
+// Si no estamos en modo de prueba, iniciamos el servidor
+if (process.env.NODE_ENV !== "test") {
+  server.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+  });
+}
+
+// Exportamos `app`, `server` y `io` para pruebas
+export { app, server, io };
