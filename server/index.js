@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import { createServer } from "node:http";
 import dotenv from "dotenv";
 import { createClient } from "@libsql/client";
+import { Semaphore } from "async-mutex";
 
 dotenv.config();
 
@@ -27,6 +28,8 @@ await db.execute(`
     message TEXT NOT NULL
   )`);
 
+const semaforoMensajes = new Semaphore(1);
+
 // Eventos WebSocket
 io.on("connection", async (socket) => {
   console.log("A user connected");
@@ -36,17 +39,19 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("chat message", async (msg) => {
-    let result;
+    const [value, release] = await semaforoMensajes.acquire(); // Adquirir el semáforo
     try {
-      result = await db.execute({
+      let result = await db.execute({
         sql: `INSERT INTO messages (message) VALUES (:content)`,
         args: { content: msg },
       });
+      io.emit("chat message", msg, result.lastInsertRowid.toString());
     } catch (error) {
       console.error("Error inserting message:", error);
       return;
+    } finally {
+      release(); // Liberar el semáforo
     }
-    io.emit("chat message", msg, result.lastInsertRowid.toString());
   });
 
   if (!socket.recovered) {
